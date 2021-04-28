@@ -185,6 +185,7 @@ def main():
     pygame.display.set_caption('Invader and defender game')
     screen.fill(ClW)
     pygame.display.update()    
+    sdf
     '''
     celldict = initializeGrid(cellRows, cellColumns) 
     
