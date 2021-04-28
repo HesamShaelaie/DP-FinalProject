@@ -1,21 +1,35 @@
+'''
+This program simulates Conway's Game of Life with the following rules:
+-  Any live cell with fewer than two live neighbors dies due to under-population.
+-  Any live cell with two or three live neighbors lives on to the next generation.
+-  Any live cell with more than three live neighbors dies from overcrowding.
+-  Any dead cell with exactly three live neighbors becomes a live cell by reproduction.
 
+Live cells are represented in orange, Dead cells are in black
+'''
 import pygame, random, sys, numpy as np
 # from time import time
 
      
 def initializeGrid(cellRows, cellColumns):
-
-
-    dt = np.dtype([
-                    ('I', np.uint8),
-                    ('J', np.uint8),
-                    ('AQ', np.float64, (4,)),
-                    ('AB', np.bool, (4,))
-                    ('AB', np.bool, (4,))
-                    
-                    ])
-
-    '''
+    """     
+     initializeGrid() takes no parameters. It creates a dictionary of all of the cells
+     based on the number of cells in each column and row on the grid. It first creates an empty dictionary
+     and populates it with 25% 1s and 75% 0s, based on a random number generator.
+     
+     
+     Parameters
+     ----------
+     cellRows: int
+         the number of cells in each row of the grid (the number of cells wide) found by dividing width of screen by cellsize
+     cellColumns: int 
+         the number of cells in each column of the grid (the number of cells high) found by dividing height of screen by cellsize
+     
+     Returns
+     -------
+     initialdict: dictionary
+         the initial dictionary populated with approximately 25% 1s (alive cells) and 75% 0s (dead cells)
+    """
     #create empty dictionary
     initialdict = {}
     #for each cell on the grid (with key x,y) set it to 0 (dead)
@@ -28,19 +42,40 @@ def initializeGrid(cellRows, cellColumns):
                 initialdict[(x,y)] = 1    #25% of cells will be alive (1)
             else:
                 initialdict[(x,y)] = 0    #75% of cells will be dead (0)
-    ''' 
+        
     return initialdict
 
 
-def drawGridLines(screen, Cl, width, height, CellW, CellH):
-   
+def drawGridLines(screen, width, height, cellsize):
+    """     
+     drawGridLines(screen) has the pygame screen surface passed to it so that it can draw
+     dark gray grid lines over the cells to visually separate them
+     
+     
+     Parameters
+     ----------
+     screen: pygame.Surface 
+         the surface that we draw on using pygame
+     width: int
+         width of the pygame surface
+     height: int
+         height of the pygame surface
+     cellsize: int
+         the size of a side of each cell (which is a square)
+     
+     Returns
+     -------
+         Nothing
+    """
+    #from 0 to 600 (or whatever screen width) increasing by the length of a cell
+    for x in range(0, width, cellsize):
+        #draw a line from the top of the screen (0) to the bottom (height) going to the right by  x
+        pygame.draw.line(screen, (50, 50, 50), (x,0),(x,height)) # draw vertical lines
     
-    for x in range(0, width, CellW):
-        pygame.draw.line(screen, Cl, (x,0),(x,height))
-    
-    
-    for y in range (0, height, CellH): 
-        pygame.draw.line(screen, Cl, (0,y), (width, y))
+    #from 0 to 600 (or whatever screen height)
+    for y in range (0, height, cellsize): 
+        #draw a line from the left of the screen (0) to right (width) going down by y
+        pygame.draw.line(screen, (50, 50, 50), (0,y), (width, y)) # draw horizontal lines
 
 
 def colorCell(key, celldict, cellsize, screen):
@@ -168,47 +203,33 @@ def main():
     """
     FRAMERATE = 10    #frames per second
     
+    width = 600   #set size of screen and size of cells
+    height = 600
+    cellsize = 10
     
-    Height = 600
-    Width = Height
-
-    CellSizeH = 10
-    CellSizeW = CellSizeH
-    GirdSizeR = 20      #number of rows
-    GirdSizeC = GirdSizeR      #number of columns
+    cellRows = int( width/cellsize ) # number of cells wide
+    cellColumns = int( height/cellsize ) # number of cells high
     
-    CellSizeW = int( Width/GirdSizeC)       # Width of  each cell
-    CellSizeH = int( Height/GirdSizeR )     # Height of each cell
+    black = (0, 0, 0)
+    white = (255, 255, 255)
+    darkgray = (50, 50, 50)
+    orange = (255, 140, 0)
     
-    ClBk = (0, 0, 0)                  #color black
-    ClWt = (255, 255, 255)            #color white
-    ClDg = (50, 50, 50)              #color Dark gray
-    ClRd = (250, 0, 0)                #color red
-    CLOr = (255, 140, 0)              #color orange
-    ClBl = (0, 0, 250)                #color blue
-
-
     pygame.init()
     clock = pygame.time.Clock()
-    screen = pygame.display.set_mode((Width,Height))
-    pygame.display.set_caption('Invader and Defender Game')
-    screen.fill(ClWt)
-    drawGridLines(screen, ClBk, Width, Height, CellSizeW, CellSizeH)
-    pygame.display.update()    
-    CellDict = initializeGrid(GirdSizeR, GirdSizeC) 
-
-    #initially draw grid lines and the colored rectangle for each cell based on whether it's alive or dead
-    #for cell in celldict:
-    #    colorCell(cell, celldict, CellSizeW, screen)
+    screen = pygame.display.set_mode((width,height))
+    pygame.display.set_caption('Game of Life')
+    screen.fill(black)
     
-    #pygame.display.update()
-
-    while True: 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit()
-
-    '''
+    # initializes an empty grid and a dictionary of dead cells and randomly assigns about 25% of cells to be alive
+    celldict = initializeGrid(cellRows, cellColumns) 
+    
+    #initially draw grid lines and the colored rectangle for each cell based on whether it's alive or dead
+    for cell in celldict:
+        colorCell(cell, celldict, cellsize, screen)
+    drawGridLines(screen, width, height, cellsize)
+    pygame.display.update()
+    
     while True: 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -216,7 +237,7 @@ def main():
     #     screen.fill(black)
     
         # replace cellDict with next generation of cells
-        celldict = nextStep(celldict, GirdSizeR, GirdSizeC)
+        celldict = nextStep(celldict, cellRows, cellColumns)
     
         # re-color the cells to their new status of dead/alive
         for key in celldict:
@@ -225,9 +246,11 @@ def main():
         
         pygame.display.update()    
         clock.tick(FRAMERATE)
-    '''
-
     
 if __name__=='__main__':
     main()
-
+"""
+note if you have a grid of size N x N, make the initial grid such that
+~25% of the cells are alive randomly, i.e. you should have 
+around 0.25*N**2 alive cells.
+"""
