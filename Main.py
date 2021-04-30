@@ -3,32 +3,70 @@ import pygame, random, sys, numpy as np
 # from time import time
 
      
-def initializeGrid(cellRows, cellColumns):
+def initializeGrid(NRows, NColumns,H,W):
 
-
+    '''
     dt = np.dtype([
                     ('I', np.uint8),
                     ('J', np.uint8),
-                    ('AQ', np.float64, (4,)),
+                    ('IB', np.bool, (4,))
                     ('AB', np.bool, (4,))
-                    ('AB', np.bool, (4,))
-                    
                     ])
 
     '''
-    #create empty dictionary
+    
+    #lines(surface, color, closed, points, width=1)
+    
+    
     initialdict = {}
-    #for each cell on the grid (with key x,y) set it to 0 (dead)
-    for y in range (cellColumns):
-        for x in range (cellRows):
-            #generate a number from 0 to 100
-            num = np.random.randint(0,101)
-            # if the number is 0 to 25 (which should randomly be around 25% of the grid)
-            if num <= 25:
-                initialdict[(x,y)] = 1    #25% of cells will be alive (1)
-            else:
-                initialdict[(x,y)] = 0    #75% of cells will be dead (0)
-    ''' 
+    for y in range (NColumns):
+        for x in range (NRows):
+            initialdict[(x,y)] = [[x*W,y*H],[1,1,1,1],[1,1,1,1]] #U D L R
+
+    for x in range (NColumns):
+
+        initialdict[(x,0)][1] = [0,1,1,1]
+        initialdict[(x,0)][2] = [0,1,1,1]
+
+        initialdict[(x,NRows-1)][1] = [1,0,1,1]
+        initialdict[(x,NRows-1)][2] = [1,0,1,1]
+        
+    for y in range (NRows):
+        initialdict[(0,y)][1] = [1,1,0,1]
+        initialdict[(0,y)][2] = [1,1,0,1]
+
+        initialdict[(NColumns-1,y)][1] = [1,1,1,0]
+        initialdict[(NColumns-1,y)][2] = [1,1,1,0]
+    
+    initialdict[(0,0)][1] = [0,1,0,1]
+    initialdict[(0,0)][2] = [0,1,0,1]
+
+    initialdict[(0,NRows-1)][1] = [1,0,0,1]
+    initialdict[(0,NRows-1)][2] = [1,0,0,1]
+
+    initialdict[(NColumns-1,0)][1] = [0,1,1,0]
+    initialdict[(NColumns-1,0)][2] = [0,1,1,0]
+
+    initialdict[(NColumns-1,NRows-1)][1] = [1,0,1,0]
+    initialdict[(NColumns-1,NRows-1)][2] = [1,0,1,0]
+
+
+    #U D L R: up down left right
+
+    initialdict[(5,5)][2] =  [0,1,1,1]
+    initialdict[(6,5)][2] =  [0,1,1,1]
+    initialdict[(7,5)][2] =  [0,1,1,0]
+    initialdict[(7,6)][2] =  [1,1,1,0]
+    initialdict[(7,7)][2] =  [1,1,1,0]
+    initialdict[(7,8)][2] =  [1,1,1,0]
+    initialdict[(7,9)][2] =  [1,1,1,0]
+
+    #constraints
+    #Vlines=[]
+    #for x in range (cellRows):
+    #    for y in range (cellColumns-1):
+            
+    
     return initialdict
 
 
@@ -42,143 +80,114 @@ def drawGridLines(screen, Cl, width, height, CellW, CellH):
     for y in range (0, height, CellH): 
         pygame.draw.line(screen, Cl, (0,y), (width, y))
 
-
-def colorCell(key, celldict, cellsize, screen):
-    """     
-     colorCell colors an individual cell in the dictionary of cells based on whether it is
-     alive (orange) or dead( black)
-     
-     
-     Parameters
-     ----------
-     key: tuple 
-         the key is the pair of coordinates (x,y) to a single cell in the dictionary
-     celldict: dictionary
-         the dictionary of all of the cells on the grid
-     cellsize: int
-         the size of a side of each cell (which is a square)
-     screen: pygame.Surface
-         the surface that we draw on using pygame
-     
-     Returns
-     -------
-         Nothing
-    """
-    x = key[0]    #take first element of key from celldict (x coordinate)
-    y = key[1]    #take second element (y coordinate)
-    x = x * cellsize  # change x and y into grid-size coordinates
-    y = y * cellsize 
-    if celldict[key] == 0:  #if the value at that key is 0 (dead)
-        pygame.draw.rect(screen, (0, 0, 0), (x, y, cellsize, cellsize))  #draw black square
-    elif celldict[key] == 1:   #if value at that key is 1 (alive)
-        pygame.draw.rect(screen, (255, 140, 0), (x, y, cellsize, cellsize)) #draw orange square
-        #pygame.draw.rect(screen, color, (xpos, ypos, width, height))
+def drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW):
+    ClBk = (0, 0, 0)                  #color black
+    ClWt = (255, 255, 255)            #color white
+    ClDg = (50, 50, 50)              #color Dark gray
+    ClRd = (250, 0, 0)                #color red
+    CLOr = (255, 140, 0)              #color orange
+    ClBl = (0, 0, 250) 
 
 
-#Count how many alive neighbors are around each cell
-def countNeighbors(key, celldict, cellRows, cellColumns):
-    """     
-     countNeighbors counts the number of alive neighbors surrounding a single cell
-     
-     
-     Parameters
-     ----------
-     key: tuple 
-         the key is the pair of coordinates (x,y) to a single cell in the dictionary (each cell is colored
-         in a for loop in the main)
-     celldict: dictionary
-         the dictionary of all of the cells on the grid
-     cellRows: int
-         the number of cells in each row of the grid (the number of cells wide) found by dividing width of screen by cellsize
-     cellColumns: int 
-         the number of cells in each column of the grid (the number of cells high) found by dividing height of screen by cellsize
-     
-     Returns
-     -------
-     neighbors: int
-         the number of living cells surrounding the current cell (at the key)
-    """
-    neighbors = 0
-    for x in range (-1,2):    #checks -1, 0, 1
-        for y in range (-1,2):
-            #checkCell variable checks all combinations of cells around the cell[key] that was passed to the method
-            #checks (xpos-1, ypos-1), (xpos-1, ypos+0), (xpos-1, ypos+1)
-            #(xpos+0, ypos-1), (xpos, ypos) <-- which we don't consider b/c it's the cell we're checking around
-            #(xpos, ypos+1), (xpos+1, ypos-1), (xpos+1, ypos), (xpos+1, ypos+1)
-            checkCell = (key[0]+x, key[1]+y)  
-            if checkCell[0] < cellRows  and checkCell[0] >=0 and checkCell[1] < cellColumns and checkCell[1]>= 0:  #if position is on grid
-                if celldict[checkCell] == 1:     #if the cell at the position being checked around the center cell is alive
-                    if x == 0 and y == 0: #leave out the center cell
-                        neighbors += 0
-                    else:
-                        neighbors += 1   #increment the alive neighbor (as long as it's not the center cell)
-    return neighbors
-
-
-#Determine the next generation of cells
-def nextStep(celldict, cellRows, cellColumns):
-    """     
-     nextStep creates a new dictionary that represents the next step or the next generation
-     of cells based on the previous one and the number of surrounding living neighbors.
-     
-     
-     Parameters
-     ----------
-     celldict: dictionary
-         the dictionary of all of the cells on the grid
-     cellRows: int
-         the number of cells in each row of the grid (the number of cells wide) found by dividing width of screen by cellsize
-     cellColumns: int 
-         the number of cells in each column of the grid (the number of cells high) found by dividing height of screen by cellsize
-     
-     Returns
-     -------
-     newGen: dictionary
-         a dictionary of the next generation of living and dead cells
-    """
-    newGen = {}
-    for key in celldict:
-        #get number of neighbors for each cell
-        numberofNeighbors = countNeighbors(key, celldict, cellRows, cellColumns)
-        
-        # If the cell is currently alive
-        if celldict[key] == 1: 
-            if numberofNeighbors < 2: # cells with fewer than 2 neighbors die due to under-population
-                newGen[key] = 0     # set newly dead cell to 0
-            elif numberofNeighbors > 3: # cells with more than three neighbors die from overcrowding
-                newGen[key] = 0       # set newly dead cell to 0
-            else:                # if the cell has 2 or 3 neighbors it lives to the next generation
-                newGen[key] = 1  # cell stays alive (1) into the next generation
-        
-        # If the cell is currently dead
-        elif celldict[key] == 0: 
-            if numberofNeighbors == 3: # any dead cell with exactly three neighbors becomes live
-                newGen[key] = 1      # set cell to be alive in the next generation
-            else:
-                newGen[key] = 0      #otherwise, cell stays dead
+    for x in range(NRow):
+        for y in range(NClm):
+            for z in range(4):
                 
-    return newGen
+                A = CellsDic[(x,y)][1][z]
+                B = CellsDic[(x,y)][2][z]
+
+                Key = False
+                if A==0 and B==0:
+                    Cl = ClDg
+                    Key = True
+                elif A==0:
+                    Cl = ClRd
+                    Key = True
+                elif B==0:
+                    Cl = ClBl
+                    Key = True
+                
+                if Key == True:
+                    
+                    Xc = CellsDic[(x,y)][0][0]
+                    Yc = CellsDic[(x,y)][0][1]
+                    if z==0:
+                        pygame.draw.line(screen, Cl, (Xc,Yc), (Xc + CellSizeW, Yc),20)
+                    elif z==1:
+                        pygame.draw.line(screen, Cl, (Xc,Yc+CellSizeH), (Xc+CellSizeW, Yc+ CellSizeH),20)
+                    elif z==2:
+                        pygame.draw.line(screen, Cl, (Xc,Yc), (Xc,Yc+CellSizeH),20)
+                    else :
+                        pygame.draw.line(screen, Cl, (Xc+CellSizeW,Yc), (Xc+CellSizeW,Yc+CellSizeH),20)
+
+class BALL:
+    def __init__(self, x, y, Cl, ClBck, R, WC, Width, Height, screen):
+        self.x = x
+        self.y = y
+        self.Cl = Cl
+        self.R = R
+        self.WC = WC
+        self.ClBck = ClBck
+        
+        self.Width = Width
+        self.Height = Height
+
+        self.Px = (x * Width) + int(Width/2)
+        self.Py = (y * Height) + int(Height/2)
+
+        self.PRx = (x * Width)
+        self.PRy = (y * Height)
+        self.scr = screen
+        self.Rec = pygame.Rect(self.PRx, self.PRy, self.Width, self.Height)
+
+    def UpPn(self, x, y):
+        self.x = x
+        self.y = y
+        self.Px = (x * self.Width) + int(self.Width/2)
+        self.Py = (y * self.Height) + int(self.Height/2)
+        self.PRx = (x * Width)
+        self.PRy = (y * Height)
+        self.Rec = pygame.Rect(self.PRx, self.PRy, self.Width, self.Height)
 
 
+    def RnIndx(self):
+        return self.x, self.y
+
+    def RnPosition(self):
+        return self.Px, self.Py, self.Cl, self.R, self.WC
+
+    def RnPR(self):
+        return self.PRx, self.PRy, self.Width, self.Height
+
+
+    def DrawBALL(screen, ball):
+        pygame.draw.circle(self.screen, self.Cl, (self.Px,self.Py), self.WC, self.R)
+
+    def RemoveBALL(screen, ball):
+        pygame.draw.rect(self.screen, self.ClBck, self.Rec)
+
+    def UpdateRegion(screen, rec, Cl):
+        return self.Rec
     
+    
+
 def main():
     """     
      main() initializes pygame, initializes the grid of cells, colors, each cell, draws grid lines
      and steps to the next generation continuously in a while loop with a frame rate of 10 FPS.
     """
-    FRAMERATE = 10    #frames per second
+    FRAMERATE = 1    #frames per second
     
     
     Height = 600
     Width = Height
 
-    CellSizeH = 10
-    CellSizeW = CellSizeH
-    GirdSizeR = 20      #number of rows
-    GirdSizeC = GirdSizeR      #number of columns
     
-    CellSizeW = int( Width/GirdSizeC)       # Width of  each cell
-    CellSizeH = int( Height/GirdSizeR )     # Height of each cell
+    NRow = 20      #number of rows
+    NClm = NRow      #number of columns
+    
+    CellSizeW = int( Width/NClm)       # Width of  each cell
+    CellSizeH = int( Height/NRow )     # Height of each cell
     
     ClBk = (0, 0, 0)                  #color black
     ClWt = (255, 255, 255)            #color white
@@ -194,19 +203,61 @@ def main():
     pygame.display.set_caption('Invader and Defender Game')
     screen.fill(ClWt)
     drawGridLines(screen, ClBk, Width, Height, CellSizeW, CellSizeH)
-    pygame.display.update()    
-    CellDict = initializeGrid(GirdSizeR, GirdSizeC) 
+    CellsDic = initializeGrid(NRow, NClm, CellSizeH, CellSizeW)
+    pygame.display.update() 
+    #print(CellsDic[(5,5)])
+    drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW)
+    R = min(CellSizeW,CellSizeH)
+    R = int(0.8*R)
+    pygame.display.update() 
 
-    #initially draw grid lines and the colored rectangle for each cell based on whether it's alive or dead
+    Intd = BALL(10, 10, ClRd, ClWt, R, 10, CellSizeW, CellSizeH)
+    Defr = BALL(15, 15, ClBl, ClWt, R, 10, CellSizeW, CellSizeH)
+    ListPositionBalls = [pygame.Rect(0,0,10,10),pygame.Rect(0,0,10,10)]
+
+    
+
+    Intd.DrawBALL()
+    Defr.DrawBALL()
+    ListPositionBalls[0] = Intd.UpdateRegion()
+    ListPositionBalls[0] = Defr.UpdateRegion()
+    pygame.display.update(ListPositionBalls) 
+
+    #pygame.draw.circle(screen, ClRd, (300,300), 15, 10)
+    #pygame.draw.line(screen, ClRd, (100,100),(100,200))
+    #pygame.display.update() 
+
+
+    #pygame.display.update()   
+
+
     #for cell in celldict:
     #    colorCell(cell, celldict, CellSizeW, screen)
     
     #pygame.display.update()
+    clock.tick(FRAMERATE)
 
     while True: 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
+
+        Intd.RemoveBALL()
+        Defr.RemoveBALL()
+        ListPositionBalls[0] = Intd.UpdateRegion()
+        ListPositionBalls[0] = Defr.UpdateRegion()
+        pygame.display.update(ListPositionBalls) 
+        
+        MoveTheBall(Intd)
+        MoveTheBall(Defr)
+
+        ListPositionBalls[0] = DrawBALL(screen, Intd)
+        ListPositionBalls[1] = DrawBALL(screen, Defr)
+        pygame.display.update(ListPositionBalls) 
+
+        
+        
+    
 
     '''
     while True: 
@@ -224,7 +275,7 @@ def main():
         drawGridLines(screen, width, height, cellsize)    # re-draw the grid lines
         
         pygame.display.update()    
-        clock.tick(FRAMERATE)
+        
     '''
 
     
