@@ -1,5 +1,7 @@
 
-import pygame, random, sys, numpy as np
+import pygame, sys, numpy as np
+import random 
+import math
 # from time import time
 
      
@@ -94,7 +96,7 @@ def drawGridLines(screen, Cl, width, height, CellW, CellH):
     for y in range (0, height, CellH): 
         pygame.draw.line(screen, Cl, (0,y), (width, y))
 
-def drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW):
+def drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW, Size):
     ClBk = (0, 0, 0)                  #color black
     ClWt = (255, 255, 255)            #color white
     ClDg = (50, 50, 50)              #color Dark gray
@@ -102,7 +104,7 @@ def drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW):
     CLOr = (255, 140, 0)              #color orange
     ClBl = (0, 0, 250) 
 
-
+    Size
     for x in range(NRow):
         for y in range(NClm):
             for z in range(4):
@@ -126,13 +128,13 @@ def drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW):
                     Xc = CellsDic[(x,y)][0][0]
                     Yc = CellsDic[(x,y)][0][1]
                     if z==0:
-                        pygame.draw.line(screen, Cl, (Xc,Yc), (Xc + CellSizeW, Yc),20)
+                        pygame.draw.line(screen, Cl, (Xc,Yc), (Xc + CellSizeW, Yc),Size)
                     elif z==1:
-                        pygame.draw.line(screen, Cl, (Xc,Yc+CellSizeH), (Xc+CellSizeW, Yc+ CellSizeH),20)
+                        pygame.draw.line(screen, Cl, (Xc,Yc+CellSizeH), (Xc+CellSizeW, Yc+ CellSizeH),Size)
                     elif z==2:
-                        pygame.draw.line(screen, Cl, (Xc,Yc), (Xc,Yc+CellSizeH),20)
+                        pygame.draw.line(screen, Cl, (Xc,Yc), (Xc,Yc+CellSizeH),Size)
                     else :
-                        pygame.draw.line(screen, Cl, (Xc+CellSizeW,Yc), (Xc+CellSizeW,Yc+CellSizeH),20)
+                        pygame.draw.line(screen, Cl, (Xc+CellSizeW,Yc), (Xc+CellSizeW,Yc+CellSizeH),Size)
 
 class BALL:
     def __init__(self, x, y, Cl, ClBck, R, WC, Width, Height, screen, Moves):
@@ -140,19 +142,25 @@ class BALL:
         self.y = y
         self.Cl = Cl
         self.R = R
+        self.Rc = int(R*1.1)
         self.WC = WC
         self.ClBck = ClBck
-        
+        self.Dirt = random.randint(0,3)
         self.Width = Width
         self.Height = Height
-
+        self.rmStp = 5
         self.Px = (x * Width) + int(Width/2)
         self.Py = (y * Height) + int(Height/2)
 
-        self.PRx = (x * Width)
-        self.PRy = (y * Height)
-        self.scr = screen
-        self.Rec = pygame.Rect(self.PRx, self.PRy, self.Width, self.Height)
+        #self.PRx = (x * Width)
+        #self.PRy = (y * Height)
+        #self.Rec = pygame.Rect(self.PRx, self.PRy, self.Width, self.Height)
+
+        self.PRx = self.Px - math.ceil(self.Rc/2.0)
+        self.PRy = self.Py - math.ceil(self.Rc/2.0)
+        self.Rec = pygame.Rect(self.PRx, self.PRy, self.Rc, self.Rc)
+
+        self.screen = screen
         self.Moves = Moves
 
     def UpPn(self, x, y):
@@ -160,9 +168,16 @@ class BALL:
         self.y = y
         self.Px = (x * self.Width) + int(self.Width/2)
         self.Py = (y * self.Height) + int(self.Height/2)
-        self.PRx = (x * Width)
-        self.PRy = (y * Height)
-        self.Rec = pygame.Rect(self.PRx, self.PRy, self.Width, self.Height)
+        
+        #self.PRx = (x * self.Width)
+        #self.PRy = (y * self.Height)
+        #self.Rec = pygame.Rect(self.PRx, self.PRy, self.Width, self.Height)
+
+        self.PRx = self.Px - math.ceil(self.Rc/2.0) 
+        self.PRy = self.Py - math.ceil(self.Rc/2.0)
+
+        self.Rec = pygame.Rect(self.PRx, self.PRy, self.Rc, self.Rc)
+        
 
 
     def RnIndx(self):
@@ -175,38 +190,91 @@ class BALL:
         return self.PRx, self.PRy, self.Width, self.Height
 
 
-    def DrawBALL(screen, ball):
+    def DrawBALL(self):
         pygame.draw.circle(self.screen, self.Cl, (self.Px,self.Py), self.WC, self.R)
 
-    def RemoveBALL(screen, ball):
+    def RemoveBALL(self):
         pygame.draw.rect(self.screen, self.ClBck, self.Rec)
 
-    def UpdateRegion(screen, rec, Cl):
+    def UpdateRegion(self):
         return self.Rec
     
     def Move(self):
 
         C = 0
-        
+
         while(True):
-            t = np.randint(4)
-            if self.Moves[(self.x,self.y)][t]
+            t = random.randint(0,3)
+            if self.Moves[(self.x,self.y)][t]:
                 break
             C += 1
-            print("Cannot find any valid moves!!!")
-            exit(234)
+            if C>30:
+                print("Cannot find any valid moves!!!")
+                exit(234)
 
-        if t==0
-            UpPn((self.x),(self.y-1))
-        elif t==1
-            UpPn((self.x),(self.y+1))
-        elif t==2
-            UpPn((self.x-1),(self.y))
+        if t==0:
+            self.UpPn((self.x),(self.y-1))
+        elif t==1:
+            self.UpPn((self.x),(self.y+1))
+        elif t==2:
+            self.UpPn((self.x-1),(self.y))
         else:
-            UpPn((self.x+1),(self.y))
+            self.UpPn((self.x+1),(self.y))
             
+    def MoveDirt(self):
+
+        C = 0
+
+        t = self.Dirt
+        while(True):
+            
+            if self.Moves[(self.x,self.y)][t]:
+                self.Dirt = t
+                break
+            t = random.randint(0,3)
+            C += 1
+            if C>30:
+                print("Cannot find any valid moves!!!")
+                exit(234)
+
+        if t==0:
+            self.UpPn((self.x),(self.y-1))
+        elif t==1:
+            self.UpPn((self.x),(self.y+1))
+        elif t==2:
+            self.UpPn((self.x-1),(self.y))
+        else:
+            self.UpPn((self.x+1),(self.y))
+
+    def MoveDirtv2(self, Stps):
+
+        t = self.Dirt
+        if not(self.Moves[(self.x,self.y)][t]) or self.rmStp <= 0:
+            C = 0
+            while(True):
+
+                t = random.randint(0,3)
+                if self.Moves[(self.x,self.y)][t]:
+                    self.Dirt = t
+                    self.rmStp = Stps
+                    break
+                C += 1
+                if C>30:
+                    print("Cannot find any valid moves!!!")
+                    exit(234)
+        else:
+            self.rmStp += -1
+            print(self.rmStp)
 
 
+        if t==0:
+            self.UpPn((self.x),(self.y-1))
+        elif t==1:
+            self.UpPn((self.x),(self.y+1))
+        elif t==2:
+            self.UpPn((self.x-1),(self.y))
+        else:
+            self.UpPn((self.x+1),(self.y))
     
     
 
@@ -215,7 +283,7 @@ def main():
      main() initializes pygame, initializes the grid of cells, colors, each cell, draws grid lines
      and steps to the next generation continuously in a while loop with a frame rate of 10 FPS.
     """
-    FRAMERATE = 1    #frames per second
+    
     
     
     Height = 600
@@ -245,17 +313,16 @@ def main():
     CellsDic, InvMoves, DefMoves = initializeGrid(NRow, NClm, CellSizeH, CellSizeW)
     pygame.display.update() 
     #print(CellsDic[(5,5)])
-    drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW)
+    drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW,10)
     R = min(CellSizeW,CellSizeH)
-    R = int(0.8*R)
+    R = int(0.5*R)
     pygame.display.update() 
 
-    Intd = BALL(10, 10, ClRd, ClWt, R, 10, CellSizeW, CellSizeH, InvMoves)
-    Defr = BALL(15, 15, ClBl, ClWt, R, 10, CellSizeW, CellSizeH, DefMoves)
+    Intd = BALL(10, 10, ClRd, ClWt, R, 8, CellSizeW, CellSizeH,screen, InvMoves)
+    Defr = BALL(6, 6, ClBl, ClWt, R, 8, CellSizeW, CellSizeH,screen, DefMoves)
     ListPositionBalls = [pygame.Rect(0,0,10,10)]*4
 
     
-
     Intd.DrawBALL()
     Defr.DrawBALL()
 
@@ -273,7 +340,7 @@ def main():
 
     #for cell in celldict:
     #    colorCell(cell, celldict, CellSizeW, screen)
-    
+    FRAMERATE = 10    #frames per second
     #pygame.display.update()
     clock.tick(FRAMERATE)
 
@@ -284,18 +351,24 @@ def main():
         Defr.RemoveBALL()
         ListPositionBalls[0] = Intd.UpdateRegion()
         ListPositionBalls[1] = Defr.UpdateRegion()
-        pygame.display.update(ListPositionBalls) 
-        
-        MoveTheBall(Intd)
-        MoveTheBall(Defr)
+        #Intd.Move()
+        #Defr.Move()
+        #Defr.MoveDirt()
+        #Intd.MoveDirt()
+        Defr.MoveDirtv2(5)
+        Intd.MoveDirtv2(5)
+        Intd.DrawBALL()
+        Defr.DrawBALL()
+        ListPositionBalls[2] = Intd.UpdateRegion()
+        ListPositionBalls[3] = Defr.UpdateRegion()
 
-        ListPositionBalls[0] = DrawBALL(screen, Intd)
-        ListPositionBalls[1] = DrawBALL(screen, Defr)
         pygame.display.update(ListPositionBalls) 
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
+
+        clock.tick(FRAMERATE)
 
         
         
