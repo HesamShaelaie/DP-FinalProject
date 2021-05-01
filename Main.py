@@ -61,13 +61,27 @@ def initializeGrid(NRows, NColumns,H,W):
     initialdict[(7,8)][2] =  [1,1,1,0]
     initialdict[(7,9)][2] =  [1,1,1,0]
 
-    #constraints
-    #Vlines=[]
-    #for x in range (cellRows):
-    #    for y in range (cellColumns-1):
-            
-    
-    return initialdict
+    #x - go to the right
+    #y - go to the down
+    # 2 -> defender -> blue
+    # 1 -> Invader  -> red
+    initialdict[(5,4)][2] =  [1,0,1,1]
+    initialdict[(6,4)][2] =  [1,0,1,1]
+    initialdict[(7,4)][2] =  [1,0,1,1]
+    initialdict[(8,5)][2] =  [1,1,0,1]
+    initialdict[(8,6)][2] =  [1,1,0,1]
+    initialdict[(8,7)][2] =  [1,1,0,1]
+    initialdict[(8,8)][2] =  [1,1,0,1]
+    initialdict[(8,9)][2] =  [1,1,0,1] 
+
+    InvMoves = {}
+    DefMoves = {}
+    for x in range(NRows):
+        for y in range(NColumns):
+            InvMoves[(x,y)] = initialdict[(x,y)][1]
+            DefMoves[(x,y)] = initialdict[(x,y)][2]
+
+    return initialdict , InvMoves, DefMoves
 
 
 def drawGridLines(screen, Cl, width, height, CellW, CellH):
@@ -121,7 +135,7 @@ def drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW):
                         pygame.draw.line(screen, Cl, (Xc+CellSizeW,Yc), (Xc+CellSizeW,Yc+CellSizeH),20)
 
 class BALL:
-    def __init__(self, x, y, Cl, ClBck, R, WC, Width, Height, screen):
+    def __init__(self, x, y, Cl, ClBck, R, WC, Width, Height, screen, Moves):
         self.x = x
         self.y = y
         self.Cl = Cl
@@ -139,6 +153,7 @@ class BALL:
         self.PRy = (y * Height)
         self.scr = screen
         self.Rec = pygame.Rect(self.PRx, self.PRy, self.Width, self.Height)
+        self.Moves = Moves
 
     def UpPn(self, x, y):
         self.x = x
@@ -168,6 +183,30 @@ class BALL:
 
     def UpdateRegion(screen, rec, Cl):
         return self.Rec
+    
+    def Move(self):
+
+        C = 0
+        
+        while(True):
+            t = np.randint(4)
+            if self.Moves[(self.x,self.y)][t]
+                break
+            C += 1
+            print("Cannot find any valid moves!!!")
+            exit(234)
+
+        if t==0
+            UpPn((self.x),(self.y-1))
+        elif t==1
+            UpPn((self.x),(self.y+1))
+        elif t==2
+            UpPn((self.x-1),(self.y))
+        else:
+            UpPn((self.x+1),(self.y))
+            
+
+
     
     
 
@@ -203,7 +242,7 @@ def main():
     pygame.display.set_caption('Invader and Defender Game')
     screen.fill(ClWt)
     drawGridLines(screen, ClBk, Width, Height, CellSizeW, CellSizeH)
-    CellsDic = initializeGrid(NRow, NClm, CellSizeH, CellSizeW)
+    CellsDic, InvMoves, DefMoves = initializeGrid(NRow, NClm, CellSizeH, CellSizeW)
     pygame.display.update() 
     #print(CellsDic[(5,5)])
     drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW)
@@ -211,14 +250,15 @@ def main():
     R = int(0.8*R)
     pygame.display.update() 
 
-    Intd = BALL(10, 10, ClRd, ClWt, R, 10, CellSizeW, CellSizeH)
-    Defr = BALL(15, 15, ClBl, ClWt, R, 10, CellSizeW, CellSizeH)
-    ListPositionBalls = [pygame.Rect(0,0,10,10),pygame.Rect(0,0,10,10)]
+    Intd = BALL(10, 10, ClRd, ClWt, R, 10, CellSizeW, CellSizeH, InvMoves)
+    Defr = BALL(15, 15, ClBl, ClWt, R, 10, CellSizeW, CellSizeH, DefMoves)
+    ListPositionBalls = [pygame.Rect(0,0,10,10)]*4
 
     
 
     Intd.DrawBALL()
     Defr.DrawBALL()
+
     ListPositionBalls[0] = Intd.UpdateRegion()
     ListPositionBalls[0] = Defr.UpdateRegion()
     pygame.display.update(ListPositionBalls) 
@@ -238,14 +278,12 @@ def main():
     clock.tick(FRAMERATE)
 
     while True: 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit()
+        
 
         Intd.RemoveBALL()
         Defr.RemoveBALL()
         ListPositionBalls[0] = Intd.UpdateRegion()
-        ListPositionBalls[0] = Defr.UpdateRegion()
+        ListPositionBalls[1] = Defr.UpdateRegion()
         pygame.display.update(ListPositionBalls) 
         
         MoveTheBall(Intd)
@@ -254,6 +292,10 @@ def main():
         ListPositionBalls[0] = DrawBALL(screen, Intd)
         ListPositionBalls[1] = DrawBALL(screen, Defr)
         pygame.display.update(ListPositionBalls) 
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
 
         
         
