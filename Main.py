@@ -137,9 +137,11 @@ def drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW, Size):
                         pygame.draw.line(screen, Cl, (Xc+CellSizeW,Yc), (Xc+CellSizeW,Yc+CellSizeH),Size)
 
 class BALL:
-    def __init__(self, x, y, Cl, ClBck, R, WC, Width, Height, screen, Moves):
-        self.x = x
-        self.y = y
+    def __init__(self, Type, ID, NRow, NClm, Cl, ClBck, R, WC, Width, Height, screen, Moves):
+        self.Type = Type
+        self.x = random.randint(0,NRow-1)
+        self.y = random.randint(0,NClm-1)
+        self.ID = ID
         self.Cl = Cl
         self.R = R
         self.Rc = int(R*1.1)
@@ -149,8 +151,11 @@ class BALL:
         self.Width = Width
         self.Height = Height
         self.rmStp = 5
-        self.Px = (x * Width) + int(Width/2)
-        self.Py = (y * Height) + int(Height/2)
+        self.Px = (self.x * Width) + int(Width/2)
+        self.Py = (self.y * Height) + int(Height/2)
+        
+        self.NRow = NRow
+        self.NClm = NClm
 
         #self.PRx = (x * Width)
         #self.PRy = (y * Height)
@@ -164,6 +169,15 @@ class BALL:
         self.Moves = Moves
 
     def UpPn(self, x, y):
+
+        if x>= self.NRow or x<0:
+            print("x input error!!!")
+            exit(2)
+
+        if y>= self.NClm or y<0:
+            print("x input error!!!")
+            exit(2)
+
         self.x = x
         self.y = y
         self.Px = (x * self.Width) + int(self.Width/2)
@@ -182,9 +196,6 @@ class BALL:
 
     def RnIndx(self):
         return self.x, self.y
-
-    def RnPosition(self):
-        return self.Px, self.Py, self.Cl, self.R, self.WC
 
     def RnPR(self):
         return self.PRx, self.PRy, self.Width, self.Height
@@ -275,6 +286,159 @@ class BALL:
             self.UpPn((self.x-1),(self.y))
         else:
             self.UpPn((self.x+1),(self.y))
+
+    def QLearning_Par(self, Gamma, Epz, NDef, NInv):
+
+        self.Gamma = Gamma
+        self.Epz = Epz
+        self.NDef = NDef
+        self.NInv = NInv
+        
+
+    def QUpdateEpz(self, Epz):
+        self.Epz = Epz
+
+    def IgniteQlearning(self):
+        Dim = []
+        for _ in range(self.NInv):
+            Dim.append(self.NRow)
+            Dim.append(self.NClm)
+
+        for _ in range(self.NDef):
+            Dim.append(self.NRow)
+            Dim.append(self.NClm)
+
+        self.V = np.zeros(tuple(Dim))
+        Dim.append(4)
+        self.Q = np.zeros(tuple(Dim))
+    
+
+
+
+class Balls_Info():
+    def Init_Screen(self, screen, Hsc, Wsc, ClBack):
+        self.Scr = screen
+        self.ScrH = Hsc
+        self.ScrW = Wsc
+        self.ClBack = ClBack
+
+    def Init_Env(self, NRow, NClm, CellW, CellH):
+        self.NRow = NRow
+        self.NClm = NClm
+        self.CellW = CellW
+        self.CellH = CellH
+
+    def Init_Inv(self, NInv, Cl, R, W, InvMoves):
+        self.InvN = NInv
+        self.InvCl = Cl
+        self.InvR = R
+        self.InvW = W
+        self.InvMoves = InvMoves
+
+    def Init_Def(self, NDef, Cl, R, W, DefMoves):
+        self.DefN = NDef
+        self.DefCl = Cl
+        self.DefR = R
+        self.DefW = W
+        self.DefMoves = DefMoves
+
+    def Create(self):
+        self.InvList = []
+        for x in range(self.InvN):
+            self.InvList.append(BALL(True, x, self.NRow, self.NClm, self.InvCl, self.ClBack, self.InvR, self.InvW, self.CellW, self.CellH, self.Scr , self.InvMoves))
+
+        self.DefList = []
+        for y in range(self.DefN):
+            self.DefList.append(BALL(False, y, self.NRow, self.NClm, self.DefCl, self.ClBack, self.DefR, self.DefW, self.CellW, self.CellH, self.Scr , self.DefMoves))
+        
+        self.Total = self.InvN + self.DefN
+        self.RecList = [pygame.Rect(0,0,10,10)]*(2*self.Total)
+
+
+    def Init_Position(self):
+        Plist = []
+        Cnt = 0
+        while Cnt < self.InvN:
+            R = random.randint(0, self.NRow)
+            C = random.randint(0, self.NClm)
+            if (R,C) not in Plist:
+                Plist.append((R,C))
+                self.InvList[Cnt].UpPn(R,C)
+                Cnt += 1
+                
+        Cnt = 0
+        while Cnt < self.DefN:
+            R = random.randint(0, self.NRow)
+            C = random.randint(0, self.NClm)
+            if (R,C) not in Plist:
+                Plist.append((R,C))
+                self.DefList[Cnt].UpPn(R,C)
+                Cnt += 1
+
+    def Draw(self):
+        Cnt = 0
+        for x in self.InvList:
+            x.DrawBALL()
+            self.RecList[Cnt] = x.UpdateRegion()
+            Cnt += 1
+
+        for y in self.DefList:
+            y.DrawBALL()
+            self.RecList[Cnt] = y.UpdateRegion()
+            Cnt += 1
+
+    def Remove(self):
+
+        Cnt = self.Total
+
+        for x in self.InvList:
+            x.RemoveBALL()
+            self.RecList[Cnt] = x.UpdateRegion()
+            Cnt += 1
+
+        for y in self.DefList:
+            y.RemoveBALL()
+            self.RecList[Cnt] = y.UpdateRegion()
+            Cnt += 1
+
+    def Move(self):
+        for x in self.InvList:
+            x.MoveDirtv2(5)
+        for y in self.DefList:
+            y.MoveDirtv2(5)
+
+    def UpdateScreen(self, Key):
+        
+        #Key=0 -> both remove and draw
+        #Key=1 -> only draw
+        #Key=2 -> only remove
+
+        if Key == 0:
+            pygame.display.update(self.RecList)
+        elif Key ==1:
+            pygame.display.update(self.RecList[0:self.Total])
+        else:
+            pygame.display.update(self.RecList[self.Total:])
+        
+
+        
+
+
+    
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
     
     
 
@@ -295,79 +459,67 @@ def main():
     
     CellSizeW = int( Width/NClm)       # Width of  each cell
     CellSizeH = int( Height/NRow )     # Height of each cell
+    CellsDic, InvMoves, DefMoves = initializeGrid(NRow, NClm, CellSizeH, CellSizeW)
     
+
+    # ============ Q learning paramters =============================
+    
+    NDef = 2
+    NInv = 1
+    Gamma = 0.5
+    epsilon = 0.1
+
+    #======================   Colors dictionary =====================
     ClBk = (0, 0, 0)                  #color black
     ClWt = (255, 255, 255)            #color white
     ClDg = (50, 50, 50)              #color Dark gray
     ClRd = (250, 0, 0)                #color red
     CLOr = (255, 140, 0)              #color orange
     ClBl = (0, 0, 250)                #color blue
-
-
+    #======================   Colors dictionary =====================
+    
     pygame.init()
     clock = pygame.time.Clock()
+    #print(CellsDic[(5,5)])
     screen = pygame.display.set_mode((Width,Height))
     pygame.display.set_caption('Invader and Defender Game')
+
     screen.fill(ClWt)
     drawGridLines(screen, ClBk, Width, Height, CellSizeW, CellSizeH)
-    CellsDic, InvMoves, DefMoves = initializeGrid(NRow, NClm, CellSizeH, CellSizeW)
-    pygame.display.update() 
-    #print(CellsDic[(5,5)])
     drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW,10)
-    R = min(CellSizeW,CellSizeH)
-    R = int(0.5*R)
-    pygame.display.update() 
-
-    Intd = BALL(10, 10, ClRd, ClWt, R, 8, CellSizeW, CellSizeH,screen, InvMoves)
-    Defr = BALL(6, 6, ClBl, ClWt, R, 8, CellSizeW, CellSizeH,screen, DefMoves)
-    ListPositionBalls = [pygame.Rect(0,0,10,10)]*4
-
     
-    Intd.DrawBALL()
-    Defr.DrawBALL()
+    pygame.display.update() 
+    
+    #=====================    creating balls  =======================
+    R = min(CellSizeH,CellSizeW)
+    R = int(R*0.5)
 
-    ListPositionBalls[0] = Intd.UpdateRegion()
-    ListPositionBalls[0] = Defr.UpdateRegion()
-    pygame.display.update(ListPositionBalls) 
+    Balls = Balls_Info()
+    Balls.Init_Screen(screen, Width, Height, ClWt)
+    Balls.Init_Env(NRow, NClm, CellSizeW, CellSizeH)
+    Balls.Init_Inv(NInv, ClRd, R, 8, InvMoves)
+    Balls.Init_Def(NDef, ClBl, R, 8, DefMoves)
+    Balls.Create()
+    Balls.Init_Position()
+    #=====================    creating balls  =======================
 
-    #pygame.draw.circle(screen, ClRd, (300,300), 15, 10)
-    #pygame.draw.line(screen, ClRd, (100,100),(100,200))
-    #pygame.display.update() 
-
-
-    #pygame.display.update()   
-
-
-    #for cell in celldict:
-    #    colorCell(cell, celldict, CellSizeW, screen)
-    FRAMERATE = 10    #frames per second
-    #pygame.display.update()
+    FRAMERATE = 10
     clock.tick(FRAMERATE)
 
+    
+    Balls.Draw()
+    Balls.UpdateScreen(1)
     while True: 
         
-
-        Intd.RemoveBALL()
-        Defr.RemoveBALL()
-        ListPositionBalls[0] = Intd.UpdateRegion()
-        ListPositionBalls[1] = Defr.UpdateRegion()
-        #Intd.Move()
-        #Defr.Move()
-        #Defr.MoveDirt()
-        #Intd.MoveDirt()
-        Defr.MoveDirtv2(5)
-        Intd.MoveDirtv2(5)
-        Intd.DrawBALL()
-        Defr.DrawBALL()
-        ListPositionBalls[2] = Intd.UpdateRegion()
-        ListPositionBalls[3] = Defr.UpdateRegion()
-
-        pygame.display.update(ListPositionBalls) 
+        Balls.Remove()
+        Balls.Move()
+        Balls.Draw()
+        Balls.UpdateScreen(0)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
-
+        
         clock.tick(FRAMERATE)
 
         
