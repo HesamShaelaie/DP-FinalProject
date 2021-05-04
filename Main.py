@@ -179,10 +179,12 @@ class BALL:
     def UpPn(self, x, y):
 
         if x>= self.NRow or x<0:
+            print(x)
             print("x input error!!!")
             exit(2)
 
         if y>= self.NClm or y<0:
+            print(y)
             print("x input error!!!")
             exit(2)
 
@@ -302,7 +304,7 @@ class BALL:
         else:
             self.UpPn((self.x+1),(self.y))
 
-    def QLearning_Par(self, Gamma, Epz, NDef, NInv):
+    def QL_Par(self, Gamma, Epz, NInv, NDef):
 
         self.Gamma = Gamma
         self.Epz = Epz
@@ -310,10 +312,10 @@ class BALL:
         self.NInv = NInv
         
 
-    def QUpdateEpz(self, Epz):
+    def QL_Up_Epz(self, Epz):
         self.Epz = Epz
 
-    def IgniteQlearning(self):
+    def QL_Env(self):
         Dim = []
         for _ in range(self.NInv):
             Dim.append(self.NRow)
@@ -357,12 +359,20 @@ class Balls_Info():
         self.DefW = W
         self.DefMoves = DefMoves
 
+    def Init_QLn(self, Gamma, Epz, InvChaM):
+        self.Gamma = Gamma
+        self.Epz = Epz
+        self.InvChaM = InvChaM
+
+        
+
     def Create(self):
         Cnt = 0
         
         self.Total = self.InvN + self.DefN
         self.RecList = [pygame.Rect(0,0,10,10)]*(2*self.Total)
         self.XYlist = [0]*(self.Total*2)
+        self.XYlist.append(0)
 
         self.InvList = []
         for _ in range(self.InvN):
@@ -374,14 +384,23 @@ class Balls_Info():
             self.DefList.append(BALL(False, Cnt, self.NRow, self.NClm, self.DefCl, self.ClBack, self.DefR, self.DefW, self.CellW, self.CellH, self.Scr , self.DefMoves, self.XYlist, self.RecList))
             Cnt += 1
         
+        for x in self.InvList:
+            x.QL_Par(self.Gamma, self.Epz, self.InvN, self.DefN)
+            x.QL_Env()
+        
+        for y in self.DefList:
+            y.QL_Par(self.Gamma, self.Epz, self.InvN, self.DefN)
+            y.QL_Env()
+
+
 
     def Init_Position(self):
         Plist = []
         
         for x in self.InvList:
             while True:
-                R = random.randint(0, self.NRow)
-                C = random.randint(0, self.NClm)
+                R = random.randint(0, self.NRow-1)
+                C = random.randint(0, self.NClm-1)
                 if (R,C) not in Plist:
                     Plist.append((R,C))
                     x.UpPn(R,C)
@@ -389,8 +408,8 @@ class Balls_Info():
         
         for y in self.DefList:
             while True:
-                R = random.randint(0, self.NRow)
-                C = random.randint(0, self.NClm)
+                R = random.randint(0, self.NRow-1)
+                C = random.randint(0, self.NClm-1)
                 if (R,C) not in Plist:
                     Plist.append((R,C))
                     y.UpPn(R,C)
@@ -403,7 +422,6 @@ class Balls_Info():
         for x in self.InvList:
             x.DrawBALL()
             
-
         for y in self.DefList:
             y.DrawBALL()
             
@@ -413,7 +431,6 @@ class Balls_Info():
         for x in self.InvList:
             x.RemoveBALL()
             
-
         for y in self.DefList:
             y.RemoveBALL()
             
@@ -438,6 +455,24 @@ class Balls_Info():
             pygame.display.update(self.RecList[0:self.Total])
         else:
             pygame.display.update(self.RecList[self.Total:])
+    '''
+    def QLmove(self):
+
+        for Inv in self.InvList:
+            
+
+            RND = random.random()
+            if RND < self.Epz:
+                self.XYlist
+ 
+            for i in range(4):
+                if Inv.Moves((x,y))[i]:
+    '''
+
+        
+
+
+
         
 
         
@@ -450,13 +485,12 @@ class Balls_Info():
 
 
 def main():
+    
     """     
      main() initializes pygame, initializes the grid of cells, colors, each cell, draws grid lines
      and steps to the next generation continuously in a while loop with a frame rate of 10 FPS.
     """
-    
-    
-    
+
     Height = 600
     Width = Height
 
@@ -474,8 +508,8 @@ def main():
     NDef = 2
     NInv = 2
     Gamma = 0.5
-    epsilon = 0.1
-
+    Epz = 0.1
+    InvChaM = 0.9 # chance of moving invader at each event
     #======================   Colors dictionary =====================
     ClBk = (0, 0, 0)                  #color black
     ClWt = (255, 255, 255)            #color white
@@ -506,52 +540,82 @@ def main():
     Balls.Init_Env(NRow, NClm, CellSizeW, CellSizeH)
     Balls.Init_Inv(NInv, ClRd, R, 8, InvMoves)
     Balls.Init_Def(NDef, ClBl, R, 8, DefMoves)
+    Balls.Init_QLn(Gamma, Epz, InvChaM)
     Balls.Create()
-    Balls.Init_Position()
 
     #=====================    creating balls  =======================
-
+    
     FRAMERATE = 10
     clock.tick(FRAMERATE)
-
     
+    AveLimit = 200
+    AveEpd = 10000.0
+    CntEpd = 0      #Count episode
+    CntEnt = 0      #Count event in one episode
+    CntListEpd = np.zeros(AveLimit)
+
+    font = pygame.font.Font('freesansbold.ttf', 16)
+    text1 = font.render('Epz:   ' + str(CntEpd), True, ClWt, ClBl)
+    textRect1 = text1.get_rect()
+    textRect1.center = (50, 20)
+
+    text2 = font.render('Ave:   ' + str(AveEpd), True,  ClWt, ClBl)
+    textRect2 = text1.get_rect()
+    textRect2.center = (50, 40)
+
+    text3 = font.render('Evn:   ' + str(CntEnt), True,  ClWt, ClBl)
+    textRect3 = text3.get_rect()
+    textRect3.center = (50, 60)
+ 
+# infinite loop
+
+    Terminat = True
+    Balls.Init_Position()
     Balls.Draw()
     Balls.UpdateScreen(1)
+
     while True: 
         
+        screen.blit(text1, textRect1)
+        screen.blit(text3, textRect3)
+        screen.blit(text2, textRect2)
+        pygame.display.update([textRect1,textRect2,textRect3])
+
         Balls.Remove()
         Balls.Move()
+        #Terminate = Ball.QLmove()
         Balls.Draw()
         Balls.UpdateScreen(0)
 
+        if not Terminat:
+
+            Balls.Remove()
+            Balls.Init_Position()
+            Balls.Draw()
+            Balls.UpdateScreen(0)
+
+            Indx = CntEpd % AveLimit
+            CntListEpd[Indx] = CntEnt
+
+            CntEnt = 0 
+            CntEpd += 1
+
+            if CntEpd > AveLimit:
+                AveEpd = np.mean(CntListEpd)
+            else:
+                AveEpd = np.mean(CntListEpd[0:Cnt])
+        else:
+            CntEnt += 1
+
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
         
         clock.tick(FRAMERATE)
 
-        
-        
     
-
-    '''
-    while True: 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit()
-    #     screen.fill(black)
-    
-        # replace cellDict with next generation of cells
-        celldict = nextStep(celldict, GirdSizeR, GirdSizeC)
-    
-        # re-color the cells to their new status of dead/alive
-        for key in celldict:
-            colorCell(key, celldict, cellsize, screen)
-        drawGridLines(screen, width, height, cellsize)    # re-draw the grid lines
         
-        pygame.display.update()    
-        
-    '''
 
     
 if __name__=='__main__':
