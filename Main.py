@@ -456,7 +456,7 @@ class Balls_Info():
             pygame.display.update(self.RecList[0:self.Total])
         else:
             pygame.display.update(self.RecList[self.Total:])
-    '''
+    
     def QLmove(self):
 
         for Inv in self.InvList:
@@ -476,7 +476,7 @@ class Balls_Info():
                 while True:
                     Act = random.randint(0,3)
                     Dumy += 1
-                    if Inv.Moves((x,y))[Act]:
+                    if Inv.Moves[(x,y)][Act]:
                         break
 
                     if  Dumy>30:
@@ -492,10 +492,10 @@ class Balls_Info():
                 Fkey = False
 
                 for Indx in range(3):
-                    if Inv.Moves((x,y))[Indx]:
+                    if Inv.Moves[(x,y)][Indx]:
                         self.XYlist[T] = Indx
                         IndxMx = tuple(self.XYlist)
-                        TmpVl = Inv.Q(IndxMx)
+                        TmpVl = Inv.Q[IndxMx]
                         if MaxVl < TmpVl:
                             MaxVl = TmpVl
                             MaxIn = Indx
@@ -544,9 +544,9 @@ class Balls_Info():
                 ImdReward = 0.0
 
 
-            Inv.Q(IndxMxQ) = Inv.Q(IndxMxQ) + self.StepSize*(ImdReward +  (self.Gamma*(Inv.V(IndxNtV))) - Inv.Q(IndxMxQ))
-            if Inv.V(IndxPrV) < Inv.Q(IndxMxQ):
-                Inv.V(IndxPrV) = Inv.Q(IndxMxQ)
+            Inv.Q[IndxMxQ] = Inv.Q[IndxMxQ] + self.StepSize*(ImdReward +  (self.Gamma*(Inv.V[IndxNtV])) - Inv.Q[IndxMxQ])
+            if Inv.V[IndxPrV] < Inv.Q[IndxMxQ]:
+                Inv.V[IndxPrV] = Inv.Q[IndxMxQ]
 
             if Catch:
                 return True
@@ -564,10 +564,10 @@ class Balls_Info():
             Fkey = False
 
             for Indx in range(3):
-                if Def.Moves((x,y))[Indx]:
+                if Def.Moves[(x,y)][Indx]:
                     self.XYlist[T] = Indx
                     IndxMx = tuple(self.XYlist)
-                    TmpVl = Def.Q(IndxMx)
+                    TmpVl = Def.Q[IndxMx]
                     if MinVl > TmpVl:
                         MinVl = TmpVl
                         MinIn = Indx
@@ -616,24 +616,12 @@ class Balls_Info():
                 ImdReward = 0.0
 
 
-            Def.Q(IndxMxQ) = Def.Q(IndxMxQ) + self.StepSize*(ImdReward +  (self.Gamma*(Inv.V(IndxNtV))) - Def.Q(IndxMxQ))
-            if Def.V(IndxPrV) > Def.Q(IndxMxQ):
-                Def.V(IndxPrV) = Def.Q(IndxMxQ)
+            Def.Q[IndxMxQ] = Def.Q[IndxMxQ] + self.StepSize*(ImdReward +  (self.Gamma*(Inv.V[IndxNtV])) - Def.Q[IndxMxQ])
+            if Def.V[IndxPrV] > Def.Q[IndxMxQ]:
+                Def.V[IndxPrV] = Def.Q[IndxMxQ]
 
             if Catch:
                 return True    
-
-    '''
-
-
-
-        
-
-        
-
-
-    
-
 
 
 
@@ -724,7 +712,7 @@ def main():
  
 # infinite loop
 
-    Terminat = False
+    Terminat = True
     Balls.Init_Position()
     Balls.Draw()
     Balls.UpdateScreen(1)
@@ -738,9 +726,9 @@ def main():
 
         Balls.Remove()
         #Balls.Move()
-        #Terminate = Ball.QLmove()
+        Terminate = Balls.QLmove()
         #print(Balls.InvList[0].Q(tuple([1,1, 1,1, 1,1, 1,1, 1])))
-        print(Balls.InvList[0].Q(1,1, 1,1, 1,1, 1,1, 1))
+        #print(Balls.InvList[0].Q[1,1, 1,1, 1,1, 1,1, 1])
         Balls.Draw()
         Balls.UpdateScreen(0)
 
@@ -760,7 +748,7 @@ def main():
             if CntEpd > AveLimit:
                 AveEpd = np.mean(CntListEpd)
             else:
-                AveEpd = np.mean(CntListEpd[0:Cnt])
+                AveEpd = np.mean(CntListEpd[0:CntEpd])
         else:
             CntEnt += 1
 
