@@ -159,6 +159,7 @@ class BALL:
         self.NClm = NClm
         self.XYlist = XYlist
         self.RcList = RcList
+
         #self.PRx = (x * Width)
         #self.PRy = (y * Height)
         #self.Rec = pygame.Rect(self.PRx, self.PRy, self.Width, self.Height)
@@ -359,11 +360,11 @@ class Balls_Info():
         self.DefW = W
         self.DefMoves = DefMoves
 
-    def Init_QLn(self, Gamma, Epz, InvChaM):
+    def Init_QLn(self, Gamma, Epz, InvChaM, StepSize):
         self.Gamma = Gamma
         self.Epz = Epz
         self.InvChaM = InvChaM
-
+        self.StepSize = StepSize
         
 
     def Create(self):
@@ -460,16 +461,169 @@ class Balls_Info():
 
         for Inv in self.InvList:
             
-
+            
             RND = random.random()
-            if RND < self.Epz:
-                self.XYlist
- 
-            for i in range(4):
-                if Inv.Moves((x,y))[i]:
-    '''
+            Act = 0
+            
+            x = Inv.x
+            y = Inv.y
+            T = self.Total
 
-        
+            Dumy = 0
+
+            if RND < self.Epz:
+
+                while True:
+                    Act = random.randint(0,3)
+                    Dumy += 1
+                    if Inv.Moves((x,y))[Act]:
+                        break
+
+                    if  Dumy>30:
+                        print("Cannot find an action to pick in epz!!!")
+                        exit(2)
+
+
+            else:
+
+                MaxVl = -1000000
+                MaxIn = -1
+                TmpVl = 0.0
+                Fkey = False
+
+                for Indx in range(3):
+                    if Inv.Moves((x,y))[Indx]:
+                        self.XYlist[T] = Indx
+                        IndxMx = tuple(self.XYlist)
+                        TmpVl = Inv.Q(IndxMx)
+                        if MaxVl < TmpVl:
+                            MaxVl = TmpVl
+                            MaxIn = Indx
+                            Fkey = True
+                
+                if not Fkey:
+                    print("Cannot find an action to pick in non epz!!!")
+                    exit(2)
+
+                Act = MaxIn
+
+            self.XYlist[T] = Act
+
+            IndxMxQ = tuple(self.XYlist)
+            IndxPrV = tuple(self.XYlist[:-1])
+    
+            #check termination
+            if Act == 0:
+                Inv.UpPn((Inv.x),(Inv.y-1))
+                y = y-1
+            elif Act == 1:
+                Inv.UpPn((Inv.x),(Inv.y+1))
+                y = y+1
+            elif Act == 2:
+                Inv.UpPn((Inv.x-1),(Inv.y))
+                x = x-1
+            else:
+                Inv.UpPn((Inv.x+1),(Inv.y))
+                x = x+1
+
+            IndxNtV = tuple(self.XYlist[:-1])
+
+            Catch = False
+            for Def in self.DefList:
+                if Def.x == x and Def.y==y:
+                    Catch = True
+                    break
+
+            
+            # rewards
+            ImdReward = 0.0
+
+            if Catch:
+                ImdReward = -1.0
+            else:
+                ImdReward = 0.0
+
+
+            Inv.Q(IndxMxQ) = Inv.Q(IndxMxQ) + self.StepSize*(ImdReward +  (self.Gamma*(Inv.V(IndxNtV))) - Inv.Q(IndxMxQ))
+            if Inv.V(IndxPrV) < Inv.Q(IndxMxQ):
+                Inv.V(IndxPrV) = Inv.Q(IndxMxQ)
+
+            if Catch:
+                return True
+            
+        for Def in self.DefList:
+            
+            Act = 0
+            x = Def.x
+            y = Def.y
+            T = self.Total
+
+            MinVl = +1000000
+            MinIn = -1
+            TmpVl = 0.0
+            Fkey = False
+
+            for Indx in range(3):
+                if Def.Moves((x,y))[Indx]:
+                    self.XYlist[T] = Indx
+                    IndxMx = tuple(self.XYlist)
+                    TmpVl = Def.Q(IndxMx)
+                    if MinVl > TmpVl:
+                        MinVl = TmpVl
+                        MinIn = Indx
+                        Fkey = True
+            
+            if not Fkey:
+                print("Cannot find an action to pick in non epz!!!")
+                exit(2)
+
+            Act = MinIn
+
+            self.XYlist[T] = Act
+
+            IndxMxQ = tuple(self.XYlist)
+            IndxPrV = tuple(self.XYlist[:-1])
+    
+            #check termination
+            if Act == 0:
+                Def.UpPn((Def.x),(Def.y-1))
+                y = y-1
+            elif Act == 1:
+                Def.UpPn((Def.x),(Def.y+1))
+                y = y+1
+            elif Act == 2:
+                Def.UpPn((Def.x-1),(Def.y))
+                x = x-1
+            else:
+                Def.UpPn((Def.x+1),(Def.y))
+                x = x+1
+
+            IndxNtV = tuple(self.XYlist[:-1])
+
+            Catch = False
+            for Inv in self.InvList:
+                if Inv.x == x and Inv.y==y:
+                    Catch = True
+                    break
+
+            
+            # rewards
+            ImdReward = 0.0
+
+            if Catch:
+                ImdReward = -1.0
+            else:
+                ImdReward = 0.0
+
+
+            Def.Q(IndxMxQ) = Def.Q(IndxMxQ) + self.StepSize*(ImdReward +  (self.Gamma*(Inv.V(IndxNtV))) - Def.Q(IndxMxQ))
+            if Def.V(IndxPrV) > Def.Q(IndxMxQ):
+                Def.V(IndxPrV) = Def.Q(IndxMxQ)
+
+            if Catch:
+                return True    
+
+    '''
 
 
 
@@ -510,6 +664,7 @@ def main():
     Gamma = 0.5
     Epz = 0.1
     InvChaM = 0.9 # chance of moving invader at each event
+    StepSize = 0.3
     #======================   Colors dictionary =====================
     ClBk = (0, 0, 0)                  #color black
     ClWt = (255, 255, 255)            #color white
@@ -527,7 +682,7 @@ def main():
 
     screen.fill(ClWt)
     drawGridLines(screen, ClBk, Width, Height, CellSizeW, CellSizeH)
-    drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW,10)
+    drawConstraints(screen, CellsDic, NRow, NClm, CellSizeH, CellSizeW, 10)
     
     pygame.display.update() 
     
@@ -540,7 +695,7 @@ def main():
     Balls.Init_Env(NRow, NClm, CellSizeW, CellSizeH)
     Balls.Init_Inv(NInv, ClRd, R, 8, InvMoves)
     Balls.Init_Def(NDef, ClBl, R, 8, DefMoves)
-    Balls.Init_QLn(Gamma, Epz, InvChaM)
+    Balls.Init_QLn(Gamma, Epz, InvChaM, StepSize)
     Balls.Create()
 
     #=====================    creating balls  =======================
@@ -569,7 +724,7 @@ def main():
  
 # infinite loop
 
-    Terminat = True
+    Terminat = False
     Balls.Init_Position()
     Balls.Draw()
     Balls.UpdateScreen(1)
@@ -582,8 +737,10 @@ def main():
         pygame.display.update([textRect1,textRect2,textRect3])
 
         Balls.Remove()
-        Balls.Move()
+        #Balls.Move()
         #Terminate = Ball.QLmove()
+        #print(Balls.InvList[0].Q(tuple([1,1, 1,1, 1,1, 1,1, 1])))
+        print(Balls.InvList[0].Q(1,1, 1,1, 1,1, 1,1, 1))
         Balls.Draw()
         Balls.UpdateScreen(0)
 
